@@ -1,0 +1,47 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=QMCP
+qgisMinimumVersion=3.0
+description=MCP Support for QGIS
+version=0.1
+author=Mohammed Nasser
+email=nasser.mohammed.m.a@gmail.com
+
+about=The MCP Support Plugin provides seamless integration between QGIS and Model Context Protocol (MCP) tools, enabling enhanced geospatial workflows powered by AI and context-aware automation. With this plugin, users can connect QGIS projects, layers, and spatial data to MCP-compatible applications, allowing intelligent query handling, geospatial data enrichment, and workflow optimization.
+
+tracker=https://github.com/momaabna
+repository=https://github.com/momaabna
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=python,mcp,ai,agent
+
+homepage=https://github.com/momaabna
+category=Plugins
+icon=icon.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+Category of the plugin: Raster, Vector, Database or Web
+# category=
+
+# If the plugin can run on QGIS Server.
+server=False
+
