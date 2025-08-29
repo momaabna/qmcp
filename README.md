@@ -10,15 +10,12 @@ QMCP is a QGIS plugin that provides seamless integration between QGIS and Model 
 
 ## Installation
 
-1. Copy the entire `qmcp` plugin directory to your QGIS plugins folder:
+Copy the entire `qmcp` plugin directory to your QGIS plugins folder:
    - **Linux:** `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`
    - **Mac OS X:** `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
    - **Windows:** `AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\`
 
-2. Compile resources:
-```sh
-make
-```
+
 
 ## Metadata
 Author: Mohammed Nasser
