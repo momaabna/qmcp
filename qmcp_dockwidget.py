@@ -25,31 +25,14 @@
 import os
 
 from qgis.PyQt import QtGui, QtWidgets, uic
-from qgis.PyQt.QtCore import pyqtSignal
-from qgis.PyQt import QtCore
-from qgis.PyQt.QtCore import QThread
-from .generated_mcp_single_dict_with_help import mcp_server 
+from qgis.core import QgsSettings
+from qgis.PyQt.QtCore import Qt, pyqtSignal
+from .client_config import client_config_json, install_claude_desktop
+from .mcp_tools import mcp_server
+from .mcp_runtime import MCPServerController
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'qmcp_dockwidget_base.ui'))
-
-import threading
-
-class MCPDaemon(QtCore.QThread):
-    """MCP server class
-    """
-
-    def __init__(self, parent):
-        super(QThread, self).__init__()
-        self.server = mcp_server
-    def start(self):
-        self.thread = threading.Thread(target=self.server.run, kwargs={"transport": "sse"})
-        self.thread.start()
-
-    def stop(self):
-        self.thread.join()  # wait for the thread to finish
-
-
 
 
 class QMCPDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
@@ -66,17 +49,77 @@ class QMCPDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
-        self.daemon = MCPDaemon(self)
-        self.startPushButton.clicked.connect(self.startDaemon)
-        self.stopPushButton.clicked.connect(self.stopDaemon)
+        self.server = MCPServerController(mcp_server, self)
+        self.server.stateChanged.connect(self.onServerStateChanged)
+        self.startPushButton.clicked.connect(self.server.start)
+        self.stopPushButton.clicked.connect(self.server.stop)
+        self.label.setText("Status:")
+        self.horizontalLayout_4.setStretchFactor(self.statusLabel, 1)
+        self.statusLabel.setWordWrap(True)
+        # so the server address can be copied into an MCP client
+        self.statusLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-    def startDaemon(self):
-        self.daemon.start()
-        self.statusLabel.setText("MCP Server is Running")
+        self.portSpinBox = QtWidgets.QSpinBox()
+        self.portSpinBox.setRange(1024, 65535)
+        self.portSpinBox.setValue(int(QgsSettings().value("qmcp/port", 8000)))
+        self.portSpinBox.valueChanged.connect(self.onPortChanged)
+        portLayout = QtWidgets.QHBoxLayout()
+        portLayout.addWidget(QtWidgets.QLabel("Port:"))
+        portLayout.addWidget(self.portSpinBox, 1)
+        self.gridLayout.addLayout(portLayout, 1, 0)
 
-    def stopDaemon(self):
-        self.daemon.stop()
-        self.statusLabel.setText("MCP Server is Stopped")
+        clientBox = QtWidgets.QGroupBox("Connect an MCP client")
+        clientLayout = QtWidgets.QVBoxLayout(clientBox)
+        self.claudeDesktopButton = QtWidgets.QPushButton("Set up Claude Desktop")
+        self.claudeDesktopButton.setToolTip(
+            "Add QGIS to Claude Desktop's configuration (restart Claude Desktop afterwards)")
+        self.claudeDesktopButton.clicked.connect(self.setUpClaudeDesktop)
+        self.copyConfigButton = QtWidgets.QPushButton("Copy config for other clients")
+        self.copyConfigButton.setToolTip(
+            "Copy a JSON config with a local (stdio) entry and an HTTP entry")
+        self.copyConfigButton.clicked.connect(self.copyClientConfig)
+        clientLayout.addWidget(self.claudeDesktopButton)
+        clientLayout.addWidget(self.copyConfigButton)
+        self.gridLayout.addWidget(clientBox, 3, 0)
+        self.gridLayout.setRowStretch(4, 1)
+
+        self.onPortChanged(self.portSpinBox.value())
+        self.onServerStateChanged("stopped", "MCP server stopped")
+
+    def onPortChanged(self, port):
+        QgsSettings().setValue("qmcp/port", port)
+        self.server.setPort(port)
+
+    def onServerStateChanged(self, state, message):
+        self.statusLabel.setText(message)
+        self.startPushButton.setEnabled(state in ("stopped", "error"))
+        self.stopPushButton.setEnabled(state in ("starting", "running"))
+        self.portSpinBox.setEnabled(state in ("stopped", "error"))
+
+    def setUpClaudeDesktop(self):
+        try:
+            paths = install_claude_desktop(self.server.address)
+        except (OSError, ValueError) as e:
+            QtWidgets.QMessageBox.warning(self, "QMCP", "Could not update Claude Desktop:\n{}".format(e))
+            return
+        QtWidgets.QMessageBox.information(
+            self, "QMCP",
+            "QGIS was added to Claude Desktop as the \"qgis\" server:\n{}\n\n"
+            "Fully quit and reopen Claude Desktop to load it. Keep this server running "
+            "while you use it.".format("\n".join(paths)))
+
+    def copyClientConfig(self):
+        QtWidgets.QApplication.clipboard().setText(client_config_json(self.server.address))
+        QtWidgets.QMessageBox.information(
+            self, "QMCP",
+            "Client config copied to the clipboard.\n\n"
+            "Use the \"qgis\" entry in clients that launch local servers, or the "
+            "\"qgis-http\" entry (URL {}) in clients that connect over HTTP.".format(
+                self.server.address))
+
+    def shutdown(self):
+        """Stop the server; called when the plugin is unloaded."""
+        self.server.shutdown()
 
     def closeEvent(self, event):
         self.closingPlugin.emit()

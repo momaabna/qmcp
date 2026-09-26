@@ -27,8 +27,7 @@ from qgis.PyQt.QtWidgets import QAction
 # Initialize Qt resources from file resources.py
 from .resources import *
 
-# Import the code for the DockWidget
-from .qmcp_dockwidget import QMCPDockWidget
+from .dependencies import add_dependencies_to_path, ensure_dependencies
 import os.path
 
 
@@ -72,6 +71,9 @@ class QMCP:
 
         self.pluginIsActive = False
         self.dockwidget = None
+
+        # make previously installed dependencies importable
+        add_dependencies_to_path()
 
 
     # noinspection PyMethodMayBeStatic
@@ -203,6 +205,14 @@ class QMCP:
                 self.tr(u'&QMCP'),
                 action)
             self.iface.removeToolBarIcon(action)
+
+        # stop the MCP server so its port is freed for a plugin reload
+        if self.dockwidget is not None:
+            self.dockwidget.shutdown()
+            self.iface.removeDockWidget(self.dockwidget)
+            self.dockwidget.deleteLater()
+            self.dockwidget = None
+
         # remove the toolbar
         del self.toolbar
 
@@ -212,6 +222,11 @@ class QMCP:
         """Run method that loads and starts the plugin"""
 
         if not self.pluginIsActive:
+            if not ensure_dependencies(self.iface.mainWindow()):
+                return
+            # imported here because it needs the dependencies
+            from .qmcp_dockwidget import QMCPDockWidget
+
             self.pluginIsActive = True
 
             #print "** STARTING QMCP"

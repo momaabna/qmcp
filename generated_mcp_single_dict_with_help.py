@@ -1,12 +1,15 @@
 
-from mcp.server.fastmcp import FastMCP
+from .mcp_runtime import MainThreadFastMCP
 import sys
 sys.path.append('/usr/share/qgis/python/plugins')
 print(sys.path)
 import processing
 
 # Create an MCP server
-mcp_server = FastMCP("QGIS MCP Server")
+# Stateless JSON responses: clients (and mcp_bridge.py) keep working across
+# server restarts because there is no session to lose
+mcp_server = MainThreadFastMCP("QGIS MCP Server", log_level="WARNING",
+                               stateless_http=True, json_response=True)
 
 @mcp_server.tool()
 def ping() -> str:

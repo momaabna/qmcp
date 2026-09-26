@@ -44,7 +44,9 @@ PLUGINNAME = qmcp
 
 PY_FILES = \
 	__init__.py \
-	qmcp.py qmcp_dockwidget.py
+	qmcp.py qmcp_dockwidget.py \
+	mcp_runtime.py mcp_tools.py style_tools.py \
+	mcp_bridge.py client_config.py dependencies.py
 
 UI_FILES = qmcp_dockwidget_base.ui
 

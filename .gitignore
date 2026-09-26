@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Plugin packaging (pb_tool, make zip) and builds
+*.zip
+zip_build/
+help/build/
+i18n/*.qm
+
+# Backups and editor files
+*.bak
+*.orig
+*~
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
